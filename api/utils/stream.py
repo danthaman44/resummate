@@ -1,3 +1,4 @@
+import asyncio
 import json
 import traceback
 import uuid
@@ -250,3 +251,30 @@ def patch_response_with_headers(
         response.headers.setdefault("x-vercel-ai-protocol", protocol)
 
     return response
+
+
+async def fake_data_streamer():
+    """Emit a small, UI-friendly fake SSE stream for testing."""
+
+    def format_sse(payload: dict) -> str:
+        return f"data: {json.dumps(payload, separators=(',', ':'))}\n\n"
+
+    message_id = f"msg-{uuid.uuid4().hex}"
+    text_stream_id = "text-1"
+
+    chunks = [
+        "This is a fake streamed response. ",
+        "Each chunk mimics the text-delta shape. ",
+        "UI should render this sequentially.",
+    ]
+
+    yield format_sse({"type": "start", "messageId": message_id})
+
+    for idx, chunk in enumerate(chunks):
+        await asyncio.sleep(1.0)
+        yield format_sse({"type": "text-start", "id": text_stream_id})
+        yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": chunk})
+        yield format_sse({"type": "text-end", "id": text_stream_id})
+        
+    yield format_sse({"type": "finish"})
+    yield "data: [DONE]\n\n"
