@@ -2,7 +2,7 @@ from typing import List
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, Request as FastAPIRequest
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from openai import OpenAI
 from .utils.prompt import ClientMessage, convert_to_openai_messages
 from .utils.stream import patch_response_with_headers, stream_text
@@ -24,6 +24,11 @@ async def _vercel_set_headers(request: FastAPIRequest, call_next):
 
 class Request(BaseModel):
     messages: List[ClientMessage]
+
+
+@app.get("/api/health")
+async def health_check():
+    return JSONResponse(content={"status": "healthy"}, status_code=200)
 
 
 @app.post("/api/chat")
