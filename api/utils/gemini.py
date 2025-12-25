@@ -5,6 +5,7 @@ import uuid
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from .prompt import interviewer_system_prompt
 
 load_dotenv(".env.local")
 api_key = os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
@@ -40,7 +41,7 @@ async def stream_gemini_response(prompt: str):
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction="You are an expert on Artificial Intelligence",
+                system_instruction=interviewer_system_prompt(),
                 max_output_tokens=1000,
                 temperature=0.5,
             )
