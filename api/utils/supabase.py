@@ -11,7 +11,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Pydantic model for message
 class Message(BaseModel):
-    thread_id: int
+    thread_id: str
     sender: str
     content: str
 
@@ -25,6 +25,6 @@ async def create_message(message: Message):
     return data.data
 
 # Get all messages for a thread
-async def get_messages(thread_id: int):
+async def get_messages(thread_id: str):
     data = supabase.table("message").select("*").eq("thread_id", thread_id).execute()
     return data.data

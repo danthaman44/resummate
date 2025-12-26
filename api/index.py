@@ -1,9 +1,10 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, Request as FastAPIRequest, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
 from openai import OpenAI
+import uuid as uuid_lib
 from .utils.prompt import ClientMessage, convert_to_openai_messages
 from .utils.stream import fake_data_streamer, patch_response_with_headers, stream_text
 from .utils.tools import AVAILABLE_TOOLS, TOOL_DEFINITIONS
@@ -24,6 +25,7 @@ async def _vercel_set_headers(request: FastAPIRequest, call_next):
 
 class Request(BaseModel):
     messages: List[ClientMessage]
+    uuid: Optional[str] = None
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -61,7 +63,10 @@ async def handle_chat_data(request: Request, protocol: str = Query('data')):
     if not prompt:
         raise HTTPException(status_code=400, detail="No message content found")
 
-    await create_message(message=Message(thread_id=1, sender="user", content=prompt))
+    # Use UUID from request if provided, otherwise generate a random UUID
+    thread_id = request.uuid if request.uuid else str(uuid_lib.uuid4())
+
+    await create_message(message=Message(thread_id=thread_id, sender="user", content=prompt))
 
     response = StreamingResponse(stream_gemini_response(prompt), media_type='text/event-stream')
     return patch_response_with_headers(response, protocol)
@@ -75,6 +80,6 @@ async def generate_response(request: PromptRequest):
         raise HTTPException(status_code=500, detail=f"Error calling Gemini API: {e}")
         
 @app.get("/api/messages/{thread_id}")
-async def get_messages_by_thread_id(thread_id: int):
+async def get_messages_by_thread_id(thread_id: str):
     data = await get_messages(thread_id)
     return JSONResponse(content=data, status_code=200)

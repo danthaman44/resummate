@@ -7,9 +7,12 @@ import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat, type CreateUIMessage, type UIMessage } from "@ai-sdk/react";
 import { toast } from "sonner";
 import React from "react";
+import { useParams } from "next/navigation";
 
 export function Chat() {
-  const chatId = "001";
+  const params = useParams();
+  const uuid = params?.uuid as string;
+  const chatId = uuid || "001";
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
     id: chatId,
@@ -32,7 +35,14 @@ export function Chat() {
   const handleSubmit = (event?: { preventDefault?: () => void }) => {
     event?.preventDefault?.();
     if (input.trim()) {
-      sendMessage({ text: input });
+      sendMessage(
+        { text: input },
+        {
+          body: {
+            uuid: uuid,
+          },
+        }
+      );
       setInput("");
     }
   };
