@@ -13,6 +13,7 @@ import {
   useRef,
   useEffect,
   useCallback,
+  memo,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -21,7 +22,7 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 
 import { cn, sanitizeUIMessages } from "@/lib/utils";
 
-import { ArrowUpIcon, StopIcon } from "./icons";
+import { ArrowUpIcon, StopIcon, PaperclipIcon } from "./icons";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 
@@ -58,6 +59,7 @@ export function MultimodalInput({
   setMessages,
   sendMessage,
   handleSubmit,
+  status,
   className,
 }: {
   chatId: string;
@@ -74,9 +76,12 @@ export function MultimodalInput({
     },
     chatRequestOptions?: ChatRequestOptions
   ) => void;
+  status: UseChatHelpers<UIMessage>["status"];
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const { width } = useWindowSize();
 
   useEffect(() => {
@@ -191,6 +196,16 @@ export function MultimodalInput({
         }}
       />
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        multiple
+        accept="application/pdf"
+      />
+
+      <AttachmentsButton fileInputRef={fileInputRef} status={status} />
+
       {isLoading ? (
         <Button
           className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 border dark:border-zinc-600"
@@ -217,3 +232,28 @@ export function MultimodalInput({
     </div>
   );
 }
+
+function PureAttachmentsButton({
+  fileInputRef,
+  status,
+}: {
+  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
+  status: UseChatHelpers<UIMessage>["status"];
+}) {
+  return (
+    <Button
+      className="rounded-full p-1.5 h-fit absolute bottom-2 left-2 m-0.5 border dark:border-zinc-600"
+      data-testid="attachments-button"
+      disabled={status !== "ready"}
+      onClick={(event) => {
+        event.preventDefault();
+        fileInputRef.current?.click();
+      }}
+      variant="ghost"
+    >
+      <PaperclipIcon size={14} />
+    </Button>
+  );
+}
+
+const AttachmentsButton = memo(PureAttachmentsButton);

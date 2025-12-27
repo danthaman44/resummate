@@ -85,6 +85,7 @@ export function Chat() {
           messages={messages}
           setMessages={setMessages}
           sendMessage={sendMessage}
+          status={status}
         />
       </form>
     </div>
