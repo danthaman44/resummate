@@ -5,7 +5,7 @@ import uuid
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-from .prompt import interviewer_system_prompt
+from .prompt import system_prompt
 from .supabase import create_message, Message
 
 load_dotenv(".env.local")
@@ -42,7 +42,7 @@ async def stream_gemini_response(prompt: str, thread_id: str):
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
-                system_instruction=interviewer_system_prompt(),
+                system_instruction=system_prompt(),
                 max_output_tokens=1000,
                 temperature=0.5,
             )
