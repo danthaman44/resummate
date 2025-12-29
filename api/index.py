@@ -8,7 +8,7 @@ import uuid as uuid_lib
 from .utils.prompt import ClientMessage, convert_to_openai_messages
 from .utils.stream import fake_data_streamer, patch_response_with_headers, stream_text
 from .utils.tools import AVAILABLE_TOOLS, TOOL_DEFINITIONS
-from .utils.gemini import gemini_response, stream_gemini_response
+from .utils.gemini import gemini_response, stream_gemini_response, upload_file_to_gemini
 from vercel import oidc
 from vercel.headers import set_headers
 from .utils.supabase import create_message, get_messages, Message
@@ -86,9 +86,7 @@ async def get_messages_by_thread_id(thread_id: str):
 @app.post("/api/files/upload")
 async def upload_file(file: UploadFile = File(...)):
     try:
-        print("file name: ", file.filename)
-        print("file content_type: ", file.content_type)
-        print("file size in bytes: ", file.size)
-        return JSONResponse(content={"message": "File uploaded successfully"}, status_code=200)
+        resume_feedback = await upload_file_to_gemini(file)
+        return JSONResponse(content={"resume_feedback": resume_feedback}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error uploading file: {e}")

@@ -2,19 +2,24 @@ import os
 import json
 import traceback
 import uuid
+import tempfile
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
 from .prompt import system_prompt
 from .supabase import create_message, Message
+from fastapi import UploadFile, File, HTTPException
 
 load_dotenv(".env.local")
 api_key = os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
 client = genai.Client(api_key=api_key)
 
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB size limit
+GEMINI_MODEL = "gemini-2.5-flash"
+
 def gemini_response(prompt):  
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model=GEMINI_MODEL,
         contents=prompt,
         config=types.GenerateContentConfig(
             system_instruction="You are an expert on Artificial Intelligence",
@@ -69,3 +74,41 @@ async def stream_gemini_response(prompt: str, thread_id: str):
         yield format_sse({"type": "finish"})
         yield "data: [DONE]\n\n"
         raise
+
+async def upload_file_to_gemini(file: UploadFile = File(...)):
+    if file.size > MAX_UPLOAD_SIZE:
+        raise HTTPException(status_code=413, detail="File size exceeds the allowed limit")
+    
+    # Create a temporary file with the same extension
+    suffix = os.path.splitext(file.filename)[1] if file.filename else ""
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+        # Write the uploaded file content to the temp file
+        content = await file.read()
+        temp_file.write(content)
+        temp_path = temp_file.name
+    
+    try:
+        # Upload to Gemini using the file path
+        gemini_file = client.files.upload(file=temp_path)
+        result = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=[
+                gemini_file,
+                "\n\n",
+                "Give feedback on this resume in one sentence. Be concise and to the point.",
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt(),
+                max_output_tokens=1000,
+                temperature=0.5,
+            )
+        )   
+        return result.text
+    except Exception as e:
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error uploading file: {e}")
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
