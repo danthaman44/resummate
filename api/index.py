@@ -93,7 +93,7 @@ async def get_messages_by_thread_id(thread_id: str):
 @app.post("/api/files/upload")
 async def upload_file(file: UploadFile = File(...), uuid: str = Form(None)):
     try:
-        resume_feedback, gemini_file = await upload_file_to_gemini(file)
+        resume_feedback, gemini_file = await upload_file_to_gemini(uuid, file)
         
         # Use uuid from request if provided, otherwise generate a random UUID
         thread_id = uuid if uuid else str(uuid_lib.uuid4())

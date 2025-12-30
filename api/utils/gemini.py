@@ -3,6 +3,7 @@ import json
 import traceback
 import uuid
 import tempfile
+import time
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -75,7 +76,7 @@ async def stream_gemini_response(prompt: str, thread_id: str):
         yield "data: [DONE]\n\n"
         raise
 
-async def upload_file_to_gemini(file: UploadFile = File(...)):
+async def upload_file_to_gemini(thread_id: str, file: UploadFile = File(...)):
     if file.size > MAX_UPLOAD_SIZE:
         raise HTTPException(status_code=413, detail="File size exceeds the allowed limit")
     
@@ -89,21 +90,27 @@ async def upload_file_to_gemini(file: UploadFile = File(...)):
         temp_path = temp_file.name
     
     try:
-        # Upload to Gemini using the file path
+        # Upload the resume using the Files API
         gemini_file = client.files.upload(file=temp_path)
+
+        # Wait for the file to finish processing
+        while gemini_file.state.name == 'PROCESSING':
+            time.sleep(1)
+            gemini_file = client.files.get(name=gemini_file.name)
+
+        # Generate content using the uploaded resume
         result = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=[
                 gemini_file,
-                "\n\n",
-                "Give feedback on this resume in one sentence. Be concise and to the point.",
+                "Briefly thank the user for uploading the resume. Do not output anything else.",
             ],
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt(),
-                max_output_tokens=1000,
+                max_output_tokens=1024,
                 temperature=0.5,
             )
-        )   
+        )
         return result.text, gemini_file
     except Exception as e:
         traceback.print_exc()
