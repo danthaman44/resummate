@@ -73,6 +73,8 @@ async def save_resume(thread_id: str, file_name: str, resume_file: File):
 async def get_resume_identifier(thread_id: str):
     try:
         data = supabase.table("resume").select("*").eq("thread_id", thread_id).execute()
+        if not data.data:
+            return None
         return data.data[0]["name"]
     except Exception as e:
         traceback.print_exc()

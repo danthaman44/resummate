@@ -39,7 +39,7 @@ export function Chat() {
         { text: input },
         {
           body: {
-            uuid: chatId,
+            id: chatId,
           },
         }
       );

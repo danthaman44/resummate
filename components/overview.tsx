@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-import { MessageIcon } from "./icons";
+import { SummarizeIcon } from "./icons";
 
 export const Overview = () => {
   return (
@@ -14,20 +14,18 @@ export const Overview = () => {
     >
       <div className="rounded-xl p-6 flex flex-col gap-8 leading-relaxed text-center max-w-2xl">
         <p className="flex flex-row justify-center gap-4 items-center">
-          <MessageIcon size={32} />
+          <SummarizeIcon size={32} />
         </p>
         <div>
           <p>
-            <b>Mockly</b> is an AI coach that assists with technical interview preparation.
-          </p>
-          <p>
-            Mockly walks through problems step-by-step, simulating a real interview.
-          </p>
-          <p>
-            At the end of the session, Mockly provides helpful feedback and suggestions.
+            <b>ExperienceIQ</b> is an AI career strategist that transforms your resume into a "Top 1%" application.
           </p>
           <p className="mt-4">
-            Start a mock interview session by selecting a question.
+            ExperienceIQ provides interactive coaching and detailed feedback based on modern hiring standards and ATS optimization.
+            Get personalized suggestions for improving your resume, from action verbs to keyword alignment for your target role.
+          </p>
+          <p className="mt-4">
+            Start by uploading your resume to receive expert feedback.
           </p>
         </div>
       </div>

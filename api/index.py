@@ -25,7 +25,7 @@ async def _vercel_set_headers(request: FastAPIRequest, call_next):
 
 class Request(BaseModel):
     messages: List[ClientMessage]
-    uuid: Optional[str] = None
+    id: Optional[str] = None
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -64,7 +64,7 @@ async def handle_chat_data(request: Request, protocol: str = Query('data')):
         raise HTTPException(status_code=400, detail="No message content found")
 
     # Use UUID from request if provided, otherwise generate a random UUID
-    thread_id = request.uuid if request.uuid else str(uuid_lib.uuid4())
+    thread_id = request.id if request.id else str(uuid_lib.uuid4())
 
     # Create user message
     await create_message(message=Message(thread_id=thread_id, sender="user", content=prompt))

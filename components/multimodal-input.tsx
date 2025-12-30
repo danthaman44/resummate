@@ -28,24 +28,20 @@ import { Textarea } from "./ui/textarea";
 
 const suggestedActions = [
   {
-    title: "Query Cache",
-    label: "Design a key-value cache",
-    action: "Design a key-value cache to save the results of the most recent web server queries",
+    title: "0",
+    label: "What’s the biggest red flag?",
   },
   {
-    title: "Web Crawler",
-    label: "Design a web crawler",
-    action: "Design a web crawler",
+    title: "1",
+    label: "How would this resume differ for startups?",
   },
   {
-    title: "Social Graph",
-    label: "Design data structures for social network",
-    action: "Design the data structures for a social network",
+    title: "2",
+    label: "Where can I show ownership or decision-making?",
   },
   {
-    title: "Sales Rank",
-    label: "Design Amazon's sales rank",
-    action: "Design Amazon's sales rank by category feature",
+    title: "3",
+    label: "How ATS-friendly is this resume?",
   },
 ];
 
@@ -184,14 +180,13 @@ export function MultimodalInput({
                     parts: [
                       {
                         type: "text",
-                        text: suggestedAction.action,
+                        text: suggestedAction.label,
                       },
                     ],
                   });
                 }}
-                className="text-left border rounded-xl px-4 py-3.5 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start"
+                className="text-left border rounded-xl px-4 py-3.5 text-sm w-full h-auto justify-start items-start whitespace-normal break-words overflow-wrap-anywhere"
               >
-                <span className="font-medium">{suggestedAction.title}</span>
                 <span className="text-muted-foreground">
                   {suggestedAction.label}
                 </span>
