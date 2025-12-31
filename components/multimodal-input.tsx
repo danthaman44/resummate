@@ -7,12 +7,18 @@ type ChatRequestOptions = {
   body?: object;
   data?: any;
 };
+
+type FileAttachment = {
+  name: string;
+  type: string;
+};
+
 import { motion } from "framer-motion";
-import type React from "react";
-import {
+import React, {
   useRef,
   useEffect,
   useCallback,
+  useState,
   memo,
   type Dispatch,
   type SetStateAction,
@@ -25,6 +31,7 @@ import { cn, sanitizeUIMessages } from "@/lib/utils";
 import { ArrowUpIcon, StopIcon, PaperclipIcon } from "./icons";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
+import { FileAttachment } from "./file-attachment";
 
 const suggestedActions = [
   {
@@ -77,6 +84,7 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachedFile, setAttachedFile] = useState<FileAttachment | null>(null);
 
   const { width } = useWindowSize();
 
@@ -126,6 +134,13 @@ export function MultimodalInput({
     formData.append("file", file);
     formData.append("uuid", chatId);
 
+    // Store the attached file info
+    const fileType = file.type.split('/')[1]?.toUpperCase() || 'PDF';
+    setAttachedFile({
+      name: file.name,
+      type: fileType,
+    });
+
     try {
       const response = await fetch("/api/files/upload", {
         method: "POST",
@@ -134,13 +149,12 @@ export function MultimodalInput({
 
       if (response.ok) {
         const data = await response.json();
-        const { url, pathname, contentType } = data;
         toast.success(file.name + " uploaded successfully!");
 
         return {
-          url,
-          name: pathname,
-          contentType,
+          url: data.url,
+          name: data.pathname,
+          contentType: data.contentType,
         };
       }
       const { error } = await response.json();
@@ -193,6 +207,16 @@ export function MultimodalInput({
               </Button>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {attachedFile && (
+        <div className="flex justify-start">
+          <FileAttachment
+            fileName={attachedFile.name}
+            fileType={attachedFile.type}
+            onRemove={() => setAttachedFile(null)}
+          />
         </div>
       )}
 
