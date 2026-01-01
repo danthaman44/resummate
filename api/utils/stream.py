@@ -286,7 +286,7 @@ async def stream_resume_required_message(thread_id: str):
     
     message_id = f"msg-{uuid.uuid4().hex}"
     text_stream_id = "text-1"
-    message_text = "Please upload a resume before chatting"
+    message_text = "Please upload a resume before chatting with ExperienceIQ."
     
     yield format_sse({"type": "start", "messageId": message_id})
     yield format_sse({"type": "text-start", "id": text_stream_id})

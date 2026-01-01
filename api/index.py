@@ -11,7 +11,7 @@ from .utils.tools import AVAILABLE_TOOLS, TOOL_DEFINITIONS
 from .utils.gemini import gemini_response, stream_gemini_response, upload_file_to_gemini
 from vercel import oidc
 from vercel.headers import set_headers
-from .utils.supabase import Message, create_message, get_messages, save_resume, get_resume_identifier
+from .utils.supabase import Message, create_message, get_messages, save_resume, get_resume
 from .utils.logging import log_info
 load_dotenv(".env.local")
 
@@ -69,13 +69,13 @@ async def handle_chat_data(request: Request, protocol: str = Query('data')):
     # Create user message
     await create_message(message=Message(thread_id=thread_id, sender="user", content=prompt))
 
-    resume_identifier = await get_resume_identifier(thread_id)
-    if not resume_identifier:
+    resume = await get_resume(thread_id)
+    if not resume:
         # Stream AI system message asking to upload resume
         response = StreamingResponse(stream_resume_required_message(thread_id), media_type='text/event-stream')
         return patch_response_with_headers(response, protocol)
 
-    response = StreamingResponse(stream_gemini_response(prompt, thread_id, resume_identifier), media_type='text/event-stream')
+    response = StreamingResponse(stream_gemini_response(prompt, thread_id, resume[0]["name"]), media_type='text/event-stream')
     return patch_response_with_headers(response, protocol)
 
 @app.post("/api/generate")
@@ -106,3 +106,10 @@ async def upload_file(file: UploadFile = File(...), uuid: str = Form(None)):
         return JSONResponse(content={"message": "Resume uploaded successfully!"}, status_code=200)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error uploading file: {e}")
+
+@app.get("/api/files/{thread_id}")
+async def get_resume_file(thread_id: str):
+    resume = await get_resume(thread_id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return JSONResponse(content={"name": resume[0]["file_name"], "contentType": resume[0]["mime_type"]}, status_code=200)

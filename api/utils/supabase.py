@@ -70,12 +70,12 @@ async def save_resume(thread_id: str, file_name: str, resume_file: File):
         raise Exception(f"Error saving resume: {e}")
 
 # Get resume identifier for a thread, ie `files/q4otskusf4j2`
-async def get_resume_identifier(thread_id: str):
+async def get_resume(thread_id: str):
     try:
         data = supabase.table("resume").select("*").eq("thread_id", thread_id).execute()
         if not data.data:
             return None
-        return data.data[0]["name"]
+        return data.data
     except Exception as e:
         traceback.print_exc()
         raise Exception(f"Error getting resume identifier: {e}")

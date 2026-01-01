@@ -157,10 +157,9 @@ export function MultimodalInput({
           contentType: data.contentType,
         };
       }
-      const { error } = await response.json();
-      toast.error(error);
+      toast.error("Failed to upload resume, please try again!");
     } catch (_error) {
-      toast.error("Failed to upload file, please try again!");
+      toast.error("Failed to upload resume, please try again!");
     }
   }, []);
 
@@ -172,6 +171,33 @@ export function MultimodalInput({
       textareaRef.current?.focus();
     }
   }, [handleSubmit, setLocalStorageInput, width]);
+
+  const loadResume = useCallback(async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/files/${chatId}`, {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
+        setAttachedFile({
+          name: data.name,
+          type: fileType,
+        });
+      } else {
+        setAttachedFile(null);
+      }
+    } catch (error) {
+      console.error(error);
+      setAttachedFile(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadResume(chatId);
+  }, [chatId, loadResume]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">
