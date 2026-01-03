@@ -30,7 +30,7 @@ async def create_message(message: Message):
         raise Exception(f"Error creating message: {e}")
 
 # Get all messages for a thread
-async def get_messages(thread_id: str, limit: int = 10):
+async def get_messages(thread_id: str, limit: int = 20):
     try:
         query = supabase.table("message")\
             .select("*")\

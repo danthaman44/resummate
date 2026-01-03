@@ -294,7 +294,7 @@ async def stream_resume_required_message(thread_id: str):
     yield format_sse({"type": "text-end", "id": text_stream_id})
     
     # Save the AI message to the database
-    await create_message(message=Message(thread_id=thread_id, sender="ai", content=message_text))
+    await create_message(message=Message(thread_id=thread_id, sender="model", content=message_text))
     
     yield format_sse({"type": "finish"})
     yield "data: [DONE]\n\n"

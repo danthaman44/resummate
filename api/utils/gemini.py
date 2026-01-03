@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 from google.genai.types import File
 from .prompt import system_prompt
-from .supabase import create_message, save_resume, Message
+from .supabase import create_message, get_messages, Message
 from fastapi import UploadFile, File, HTTPException
 from .logging import log_info
 from .tools import get_message_history_function
@@ -34,13 +34,12 @@ def gemini_response(prompt):
     )
     return response.text
 
-async def handle_function_call(thread_id: str, message: str, resume: File) -> str:
+async def handle_function_call(thread_id: str, user_message: str, resume: File) -> str:
     # The history retrieved by your tool call:
-    retrieved_history = [
-        {"role": "user", "parts": [{"text": "Hi, I need help with my resume."}]},
-        {"role": "model", "parts": [{"text": "Sure! I can help. What's your target role?"}]},
-        {"role": "user", "parts": [{"text": "Senior Backend Engineer."}]}
-    ]
+    retrieved_history = []
+    past_messages = await get_messages(thread_id)
+    for past_message in past_messages[:-1]:
+        retrieved_history.append({"role": past_message["sender"], "parts": [{"text": past_message["content"]}]})
 
     # The subsequent API call
     chat = client.chats.create(
@@ -52,7 +51,7 @@ async def handle_function_call(thread_id: str, message: str, resume: File) -> st
         },
         history=retrieved_history # Pass your tool-retrieved messages here
     )
-    response = chat.send_message([message, resume])
+    response = chat.send_message([user_message, resume])
     return response.text
 
 async def stream_gemini_response(prompt: str, thread_id: str, file_reference: str):
@@ -96,7 +95,7 @@ async def stream_gemini_response(prompt: str, thread_id: str, file_reference: st
                         text_started = True
                     yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": response})
                     # Save the AI message to the database
-                    await create_message(message=Message(thread_id=thread_id, sender="ai", content=response))
+                    await create_message(message=Message(thread_id=thread_id, sender="model", content=response))
             elif chunk.text:
                 log_info(f"Skipping Gemini function call")
                 if not text_started:
@@ -104,7 +103,7 @@ async def stream_gemini_response(prompt: str, thread_id: str, file_reference: st
                     text_started = True
                 yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": chunk.text})
                 # Save the AI message to the database
-                await create_message(message=Message(thread_id=thread_id, sender="ai", content=chunk.text))
+                await create_message(message=Message(thread_id=thread_id, sender="model", content=chunk.text))
 
         if text_started:
             yield format_sse({"type": "text-end", "id": text_stream_id})
