@@ -18,7 +18,7 @@ export const Overview = () => {
         </p>
         <div>
           <p>
-            <b>ExperienceIQ</b> is an AI career strategist that transforms your resume into a "Top 1%" application.
+            <b>ExperienceIQ</b> is an AI career strategist that transforms your resume into a &quot;Top 1%&quot; application.
           </p>
           <p className="mt-4">
             ExperienceIQ provides interactive coaching and detailed feedback based on modern hiring standards and ATS optimization.

@@ -6,7 +6,7 @@ import { Overview } from "@/components/overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { toast } from "sonner";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner"
 
@@ -19,21 +19,28 @@ export function Chat() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   useEffect(() => {
-    setIsLoadingHistory(true);
-    fetch(`/api/chat/history/${chatId}`)
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to fetch chat history');
-        return res.json();
-      })
-      .then(data => {
-        setInitialMessages(data.messages || []);
-        setIsLoadingHistory(false);
-      })
-      .catch(error => {
-        toast.error('Failed to load chat history');
-        setIsLoadingHistory(false);
-      });
-  }, []);
+      // Use setTimeout to avoid synchronous setState in effect
+      const timeoutId = setTimeout(() => {
+        setIsLoadingHistory(true);
+        setInitialMessages([]);
+      }, 0);
+      
+      fetch(`/api/chat/history/${chatId}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch chat history');
+          return res.json();
+        })
+        .then(data => {
+          setInitialMessages(data.messages || []);
+          setIsLoadingHistory(false);
+        })
+        .catch(error => {
+          toast.error('Failed to load chat history');
+          setIsLoadingHistory(false);
+        });
+      
+      return () => clearTimeout(timeoutId);
+  }, [chatId]);
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
     id: chatId,

@@ -3,19 +3,17 @@
 import { Button } from "./ui/button";
 import { GitIcon, MessageIcon } from "./icons";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useCallback } from "react";
 
 export const Navbar = () => {
 
   const router = useRouter()
-  const params = useParams()
-
   const refreshSession = useCallback(async () => {
     const uuid = crypto.randomUUID()
     // Redirect to the home page with the UUID appended
     router.push(`/${uuid}`)
-  }, [router, params]);
+  }, [router]);
 
   return (
     <div className="p-2 flex flex-row gap-2 justify-between">
