@@ -84,10 +84,11 @@ export function MultimodalInput({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [attachedFile, setAttachedFile] = useState<FileAttachment | null>(null);
+  const [isResumeLoading, setIsResumeLoading] = useState<boolean>(false);
+  const [attachedResume, setAttachedResume] = useState<FileAttachment | null>(null);
 
   // audio recording
-  const [isRecording, setIsRecording] = useState(false)
+  const [isRecording, setIsRecording] = useState<boolean>(false)
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const audioChunksRef = useRef<Blob[]>([])
 
@@ -102,9 +103,8 @@ export function MultimodalInput({
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${
-        textareaRef.current.scrollHeight + 2
-      }px`;
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2
+        }px`;
     }
   };
 
@@ -134,14 +134,15 @@ export function MultimodalInput({
     adjustHeight();
   };
 
-  const uploadFile = useCallback(async (file: File, chatId: string) => {
+  const uploadResume = useCallback(async (file: File, chatId: string) => {
+    setIsResumeLoading(true)
     const formData = new FormData();
     formData.append("file", file);
     formData.append("uuid", chatId);
 
     // Store the attached file info
     const fileType = file.type.split('/')[1]?.toUpperCase() || 'PDF';
-    setAttachedFile({
+    setAttachedResume({
       name: file.name,
       type: fileType,
     });
@@ -165,6 +166,8 @@ export function MultimodalInput({
       toast.error("Failed to upload resume, please try again!");
     } catch (_error) {
       toast.error("Failed to upload resume, please try again!");
+    } finally {
+      setIsResumeLoading(false)
     }
   }, []);
 
@@ -185,19 +188,23 @@ export function MultimodalInput({
 
       if (response.ok) {
         const data = await response.json();
-        
+
         const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
-        setAttachedFile({
+        setAttachedResume({
           name: data.name,
           type: fileType,
         });
       } else {
-        setAttachedFile(null);
+        setAttachedResume(null);
       }
     } catch (error) {
       console.error(error);
-      setAttachedFile(null);
+      setAttachedResume(null);
     }
+  }, []);
+
+  const removeResume = useCallback(() => {
+    setAttachedResume(null);
   }, []);
 
   useEffect(() => {
@@ -281,12 +288,14 @@ export function MultimodalInput({
         </div>
       )}
 
-      {attachedFile && (
+      {/* Resume Attachment */}
+      {(attachedResume || isResumeLoading) && (
         <div className="flex justify-start">
           <FileAttachment
-            fileName={attachedFile.name}
-            fileType={attachedFile.type}
-            onRemove={() => setAttachedFile(null)}
+            fileName={attachedResume?.name || "Resume"}
+            fileType={attachedResume?.type || "PDF"}
+            onRemove={removeResume}
+            isLoading={isResumeLoading}
           />
         </div>
       )}
@@ -322,7 +331,7 @@ export function MultimodalInput({
         onChange={(event) => {
           const file = event.target.files?.[0];
           if (file) {
-            uploadFile(file, chatId);
+            uploadResume(file, chatId);
           }
         }}
         multiple
@@ -401,8 +410,8 @@ function PureMicrophoneButton({
 }) {
   return (
     <Button
-    className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border dark:border-zinc-600"
-    data-testid="microphone-button"
+      className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border dark:border-zinc-600"
+      data-testid="microphone-button"
       disabled={status !== "ready"}
       onClick={(event) => {
         event.preventDefault()

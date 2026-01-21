@@ -1,15 +1,33 @@
 "use client"
 
-import { FileText, X } from "lucide-react"
+import { FileText, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface FileAttachmentProps {
   fileName: string
   fileType: string
   onRemove?: () => void
+  isLoading?: boolean
 }
 
-export function FileAttachment({ fileName, fileType, onRemove }: FileAttachmentProps) {
+export function FileAttachment({ fileName, fileType, onRemove, isLoading }: FileAttachmentProps) {
+  if (isLoading) {
+    return (
+      <div className="inline-flex items-center gap-3 rounded-xl bg-zinc-100 px-3 py-2.5 pr-2">
+        {/* Loading Icon Placeholder */}
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-zinc-200">
+          <Loader2 className="h-6 w-6 text-zinc-400 animate-spin" />
+        </div>
+
+        {/* Loading Text Placeholder */}
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <div className="h-4 w-24 rounded bg-zinc-200 animate-pulse" />
+          <div className="h-3 w-12 rounded bg-zinc-200 animate-pulse" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="inline-flex items-center gap-3 rounded-xl bg-zinc-100 px-3 py-2.5 pr-2">
       {/* Document Icon */}

@@ -66,9 +66,17 @@ async def save_resume(thread_id: str, file_name: str, resume_file: File):
         "error": getattr(resume_file, "error", None),
     }
     
-    # Insert into the resume table
+    # Check if a resume already exists for this thread_id
     try:
-        data = supabase.table("resume").insert(file_data).execute()
+        existing_resume = supabase.table("resume").select("*").eq("thread_id", thread_id).execute()
+        
+        if existing_resume.data:
+            # Update existing resume
+            data = supabase.table("resume").update(file_data).eq("thread_id", thread_id).execute()
+        else:
+            # Insert new resume
+            data = supabase.table("resume").insert(file_data).execute()
+        
         return data.data
     except Exception as e:
         traceback.print_exc()
