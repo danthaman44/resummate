@@ -1,18 +1,5 @@
 "use client";
 
-import type { CreateUIMessage, UIMessage, UseChatHelpers, UseChatOptions } from "@ai-sdk/react";
-
-type ChatRequestOptions = {
-  headers?: Record<string, string> | Headers;
-  body?: object;
-  data?: any;
-};
-
-type FileAttachment = {
-  name: string;
-  type: string;
-};
-
 import { motion } from "framer-motion";
 import React, {
   useRef,
@@ -28,10 +15,23 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 
 import { cn, sanitizeUIMessages } from "@/lib/utils";
 
-import { ArrowUpIcon, StopIcon, PaperclipIcon } from "./icons";
+import { ArrowUpIcon, StopIcon, PaperclipIcon, MicrophoneIcon } from "./icons";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
 import { FileAttachment } from "./file-attachment";
+
+import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+
+type ChatRequestOptions = {
+  headers?: Record<string, string> | Headers;
+  body?: object;
+  data?: any;
+};
+
+type FileAttachment = {
+  name: string;
+  type: string;
+};
 
 const suggestedActions = [
   {
@@ -85,6 +85,11 @@ export function MultimodalInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [attachedFile, setAttachedFile] = useState<FileAttachment | null>(null);
+
+  // audio recording
+  const [isRecording, setIsRecording] = useState(false)
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const audioChunksRef = useRef<Blob[]>([])
 
   const { width } = useWindowSize();
 
@@ -199,6 +204,46 @@ export function MultimodalInput({
     loadResume(chatId);
   }, [chatId, loadResume]);
 
+  const handleMicrophoneClick = useCallback(async () => {
+    if (isRecording) {
+      console.log("stopping recording");
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+        mediaRecorderRef.current.stop();
+      }
+      setIsRecording(false);
+    } else {
+      // Start recording
+      try {
+        console.log("starting recording");
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = mediaRecorder;
+        audioChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          console.log("event.data", event.data);
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+          console.log("audioBlob", audioBlob);
+          // TODO: Handle the recorded audio (e.g., send to API, transcribe, etc.)
+          stream.getTracks().forEach((track) => track.stop());
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Error accessing microphone:", error);
+        toast.error("Failed to access microphone. Please check permissions.");
+      }
+    }
+  }, [isRecording]);
+
   return (
     <div className="relative w-full flex flex-col gap-4">
       {messages.length === 0 && (
@@ -286,6 +331,12 @@ export function MultimodalInput({
 
       <AttachmentsButton fileInputRef={fileInputRef} status={status} />
 
+      <MicrophoneButton
+        isRecording={isRecording}
+        onClick={handleMicrophoneClick}
+        status={status}
+      />
+
       {isLoading ? (
         <Button
           className="rounded-full p-1.5 h-fit absolute bottom-2 right-2 m-0.5 border dark:border-zinc-600"
@@ -337,3 +388,32 @@ function PureAttachmentsButton({
 }
 
 const AttachmentsButton = memo(PureAttachmentsButton);
+
+
+function PureMicrophoneButton({
+  isRecording,
+  onClick,
+  status,
+}: {
+  isRecording: boolean
+  onClick: () => void
+  status: UseChatHelpers<UIMessage>["status"]
+}) {
+  return (
+    <Button
+    className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border dark:border-zinc-600"
+    data-testid="microphone-button"
+      disabled={status !== "ready"}
+      onClick={(event) => {
+        event.preventDefault()
+        onClick()
+      }}
+      variant={isRecording ? "default" : "ghost"}
+    >
+      {isRecording && <span className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />}
+      <MicrophoneIcon size={14} className={cn("relative z-10", isRecording && "text-red-500")} />
+    </Button>
+  )
+}
+
+const MicrophoneButton = memo(PureMicrophoneButton)
