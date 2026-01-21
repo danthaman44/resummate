@@ -92,3 +92,16 @@ async def get_resume(thread_id: str):
     except Exception as e:
         traceback.print_exc()
         raise Exception(f"Error getting resume identifier: {e}")
+
+async def delete_resume(thread_id: str):
+    try:
+        # Check if a resume exists for this thread_id
+        existing_resume = supabase.table("resume").select("*").eq("thread_id", thread_id).execute()
+        if not existing_resume.data:
+            return None
+        # Delete the resume
+        data = supabase.table("resume").delete().eq("thread_id", thread_id).execute()
+        return data.data
+    except Exception as e:
+        traceback.print_exc()
+        raise Exception(f"Error deleting resume: {e}")

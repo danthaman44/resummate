@@ -162,8 +162,9 @@ export function MultimodalInput({
           name: data.pathname,
           contentType: data.contentType,
         };
+      } else {
+        toast.error("Failed to upload resume, please try again!");
       }
-      toast.error("Failed to upload resume, please try again!");
     } catch (_error) {
       toast.error("Failed to upload resume, please try again!");
     } finally {
@@ -203,8 +204,21 @@ export function MultimodalInput({
     }
   }, []);
 
-  const removeResume = useCallback(() => {
+  const removeResume = useCallback(async (chatId: string) => {
     setAttachedResume(null);
+    try {
+      const response = await fetch(`/api/files/${chatId}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message);
+      } else {
+        toast.error("Failed to delete resume, please try again!");
+      }
+    } catch (error) {
+      console.error(error);
+    }
   }, []);
 
   useEffect(() => {
@@ -294,7 +308,7 @@ export function MultimodalInput({
           <FileAttachment
             fileName={attachedResume?.name || "Resume"}
             fileType={attachedResume?.type || "PDF"}
-            onRemove={removeResume}
+            onRemove={() => removeResume(chatId)}
             isLoading={isResumeLoading}
           />
         </div>

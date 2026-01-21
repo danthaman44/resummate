@@ -3,16 +3,12 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 from fastapi import FastAPI, Query, Request as FastAPIRequest, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse, JSONResponse
-from openai import OpenAI
 import uuid as uuid_lib
-from .utils.prompt import ClientMessage, convert_to_openai_messages
-from .utils.stream import fake_data_streamer, patch_response_with_headers, stream_text, stream_resume_required_message
-from .utils.tools import AVAILABLE_TOOLS, TOOL_DEFINITIONS
+from .utils.prompt import ClientMessage
+from .utils.stream import patch_response_with_headers, stream_resume_required_message
 from .utils.gemini import gemini_response, stream_gemini_response, upload_file_to_gemini
-from vercel import oidc
 from vercel.headers import set_headers
-from .utils.supabase import Message, create_message, get_messages, save_resume, get_resume
-from .utils.logging import log_info
+from .utils.supabase import Message, create_message, get_messages, save_resume, get_resume, delete_resume
 from .utils.model import ChatHistoryResponse, UIMessage, MessagePart
 
 load_dotenv(".env.local")
@@ -103,6 +99,14 @@ async def get_resume_file(thread_id: str):
     if not resume:
         raise HTTPException(status_code=404, detail="Resume not found")
     return JSONResponse(content={"name": resume[0]["file_name"], "contentType": resume[0]["mime_type"]}, status_code=200)
+
+@app.delete("/api/files/{thread_id}")
+async def delete_resume_file(thread_id: str):
+    try:
+        await delete_resume(thread_id)
+        return JSONResponse(content={"message": "Resume deleted successfully!"}, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting resume: {e}")
 
 @app.get("/api/chat/history/{thread_id}", response_model=ChatHistoryResponse)
 async def get_chat_history(thread_id: str):
