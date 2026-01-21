@@ -13,34 +13,16 @@ from .supabase import create_message, get_messages, Message
 from fastapi import UploadFile, File, HTTPException
 from .logging import log_info
 from .tools import get_message_history_function
-from google.adk.runners import Runner
-from google.adk.models import Gemini
-from google.adk.agents import Agent
-from google.adk.sessions import InMemorySessionService
-from google.genai.types import Content, Part
-
-MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB size limit
-MAX_OUTPUT_TOKENS = 512
-GEMINI_MODEL = "gemini-2.5-flash-lite"
-DEFAULT_TEMPERATURE = 0.5
-MOCK_USER_ID = "test_user_123"
-APP_NAME = "agents"
 
 load_dotenv(".env.local")
 api_key = os.getenv("GOOGLE_GENERATIVE_AI_API_KEY")
 client = genai.Client(api_key=api_key)
 tools = types.Tool(function_declarations=[get_message_history_function])
-adk_model = Gemini(model=GEMINI_MODEL)
-adk_model.api_client = client
-session_service = InMemorySessionService() # Use InMemorySessionService for local testing
 
-root_agent = Agent(
-    name="resume_feedback_agent",
-    model=adk_model,
-    description="Agent that provides helpful resume feedback and suggestions.",
-    instruction=system_prompt(),
-    tools=[],
-)
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB size limit
+MAX_OUTPUT_TOKENS = 512
+GEMINI_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_TEMPERATURE = 0.5
 
 def gemini_response(prompt):  
     response = client.models.generate_content(
@@ -74,7 +56,7 @@ async def handle_function_call(thread_id: str, user_message: str, resume: File) 
     response = chat.send_message([user_message, resume])
     return response.text
 
-async def stream_gemini_response(prompt: str, session_id: str, file_reference: str):
+async def stream_gemini_response(prompt: str, thread_id: str, file_reference: str):
     """Emit a streaming SSE response from Gemini API."""
     
     def format_sse(payload: dict) -> str:
@@ -86,59 +68,50 @@ async def stream_gemini_response(prompt: str, session_id: str, file_reference: s
     
     yield format_sse({"type": "start", "messageId": message_id})
 
+    config = types.GenerateContentConfig(
+        system_instruction=system_prompt(),
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        temperature=DEFAULT_TEMPERATURE,
+        tools=[tools]
+    )
+
     retrieved_file = client.files.get(name=file_reference)
     log_info(f"Retrieved file: {retrieved_file.name}")
-
-    # Register the session ID with the service
+    
     try:
-        session = await session_service.get_session(
-            app_name=APP_NAME,
-            user_id=MOCK_USER_ID,
-            session_id=session_id
+        # Use streaming API from Gemini
+        accumulated_content = ""  # Accumulate the entire stream content
+        stream = client.models.generate_content_stream(
+            model=GEMINI_MODEL,
+            contents=[prompt, retrieved_file],
+            config=config
         )
-        if not session:
-            await session_service.create_session(
-                app_name=APP_NAME,
-                user_id=MOCK_USER_ID,
-                session_id=session_id
-            )
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Error getting session: {e}")
-
-    try:
-        runner = Runner(
-            agent=root_agent, 
-            session_service=session_service, 
-            app_name=APP_NAME
-        )
-        response = runner.run(
-            new_message=Content(parts=[Part(text=prompt)]),
-            user_id=MOCK_USER_ID,
-            session_id=session_id)
-
-        accumulated_content = ""
-
-        for chunk in response:
-            # Extract text from Event.content.parts
-            chunk_text = None
-            if chunk.content and chunk.content.parts:
-                text_parts = [part.text for part in chunk.content.parts if hasattr(part, 'text') and part.text]
-                chunk_text = ''.join(text_parts) if text_parts else None
-
-            if chunk_text:
-                accumulated_content += chunk_text
+        
+        for chunk in stream:
+            function_call = chunk.candidates[0].content.parts[0].function_call
+            if function_call:
+                log_info(f"Making Gemini function call")
+                response = await handle_function_call(thread_id, prompt, retrieved_file) 
+                if response:
+                    if not text_started:
+                        yield format_sse({"type": "text-start", "id": text_stream_id})
+                        text_started = True
+                    yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": response})
+                    accumulated_content += response
+            elif chunk.text:
+                log_info(f"Skipping Gemini function call")
                 if not text_started:
                     yield format_sse({"type": "text-start", "id": text_stream_id})
                     text_started = True
-                yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": chunk_text}) 
+                yield format_sse({"type": "text-delta", "id": text_stream_id, "delta": chunk.text})
+                accumulated_content += chunk.text
 
         if text_started:
             yield format_sse({"type": "text-end", "id": text_stream_id})
         
         # Save the entire accumulated stream as a single message
         if accumulated_content:
-            await create_message(message=Message(thread_id=session_id, sender="model", content=accumulated_content))
+            await create_message(message=Message(thread_id=thread_id, sender="model", content=accumulated_content))
         
         yield format_sse({"type": "finish"})
         yield "data: [DONE]\n\n"
