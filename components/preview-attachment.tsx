@@ -33,12 +33,12 @@ export const PreviewAttachment = ({
         )}
 
         {isUploading && (
-          <div className="animate-spin absolute text-zinc-500">
+          <div className="animate-spin absolute text-muted-foreground">
             <LoaderIcon />
           </div>
         )}
       </div>
-      <div className="text-xs text-zinc-500 max-w-16 truncate">
+      <div className="text-xs text-muted-foreground max-w-16 truncate">
         {displayName}
       </div>
     </div>

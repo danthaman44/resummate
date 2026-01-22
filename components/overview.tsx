@@ -16,7 +16,7 @@ export const Overview = () => {
         <p className="flex flex-row justify-center gap-4 items-center">
           <SummarizeIcon size={32} />
         </p>
-        <div>
+        <div className="text-foreground">
           <p>
             <b>ExperienceIQ</b> is an AI career strategist that transforms your resume into a &quot;Top 1%&quot; application.
           </p>

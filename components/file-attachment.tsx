@@ -13,23 +13,23 @@ interface FileAttachmentProps {
 export function FileAttachment({ fileName, fileType, onRemove, isLoading }: FileAttachmentProps) {
   if (isLoading) {
     return (
-      <div className="inline-flex items-center gap-3 rounded-xl bg-zinc-100 px-3 py-2.5 pr-2">
+      <div className="inline-flex items-center gap-3 rounded-xl bg-muted px-3 py-2.5 pr-2">
         {/* Loading Icon Placeholder */}
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-zinc-200">
-          <Loader2 className="h-6 w-6 text-zinc-400 animate-spin" />
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-muted-foreground/10">
+          <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
         </div>
 
         {/* Loading Text Placeholder */}
         <div className="flex flex-col gap-1.5 min-w-0">
-          <div className="h-4 w-24 rounded bg-zinc-200 animate-pulse" />
-          <div className="h-3 w-12 rounded bg-zinc-200 animate-pulse" />
+          <div className="h-4 w-24 rounded bg-muted-foreground/20 animate-pulse" />
+          <div className="h-3 w-12 rounded bg-muted-foreground/20 animate-pulse" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="inline-flex items-center gap-3 rounded-xl bg-zinc-100 px-3 py-2.5 pr-2">
+    <div className="inline-flex items-center gap-3 rounded-xl bg-muted px-3 py-2.5 pr-2">
       {/* Document Icon */}
       <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-red-400 to-orange-500">
         <FileText className="h-7 w-7 text-white" strokeWidth={2} />
@@ -37,8 +37,8 @@ export function FileAttachment({ fileName, fileType, onRemove, isLoading }: File
 
       {/* File Info */}
       <div className="flex flex-col gap-0.5 min-w-0">
-        <p className="text-sm font-medium text-zinc-900 leading-tight text-balance">{fileName}</p>
-        <p className="text-xs text-zinc-600 uppercase tracking-wide">{fileType}</p>
+        <p className="text-sm font-medium text-foreground leading-tight text-balance">{fileName}</p>
+        <p className="text-xs text-muted-foreground uppercase tracking-wide">{fileType}</p>
       </div>
 
       {/* Close Button */}
@@ -47,7 +47,7 @@ export function FileAttachment({ fileName, fileType, onRemove, isLoading }: File
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="ml-2 h-8 w-8 shrink-0 rounded-full bg-zinc-200 hover:bg-zinc-300 text-zinc-600 hover:text-zinc-900"
+          className="ml-2 h-8 w-8 shrink-0 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground"
           aria-label="Remove file"
         >
           <X className="h-4 w-4" />

@@ -19,27 +19,27 @@ export function Chat() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
 
   useEffect(() => {
-      // Use setTimeout to avoid synchronous setState in effect
-      const timeoutId = setTimeout(() => {
-        setIsLoadingHistory(true);
-        setInitialMessages([]);
-      }, 0);
-      
-      fetch(`/api/chat/history/${chatId}`)
-        .then(res => {
-          if (!res.ok) throw new Error('Failed to fetch chat history');
-          return res.json();
-        })
-        .then(data => {
-          setInitialMessages(data.messages || []);
-          setIsLoadingHistory(false);
-        })
-        .catch(error => {
-          toast.error('Failed to load chat history');
-          setIsLoadingHistory(false);
-        });
-      
-      return () => clearTimeout(timeoutId);
+    // Use setTimeout to avoid synchronous setState in effect
+    const timeoutId = setTimeout(() => {
+      setIsLoadingHistory(true);
+      setInitialMessages([]);
+    }, 0);
+
+    fetch(`/api/chat/history/${chatId}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to fetch chat history');
+        return res.json();
+      })
+      .then(data => {
+        setInitialMessages(data.messages || []);
+        setIsLoadingHistory(false);
+      })
+      .catch(error => {
+        toast.error('Failed to load chat history');
+        setIsLoadingHistory(false);
+      });
+
+    return () => clearTimeout(timeoutId);
   }, [chatId]);
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
@@ -100,20 +100,20 @@ export function Chat() {
         className="flex flex-col min-w-0 gap-6 flex-1 overflow-y-scroll pt-4"
       >
 
-      {messages.length === 0 && <Overview />}
+        {messages.length === 0 && <Overview />}
 
-      {messages.map((message: UIMessage, index: number) => (
-        <PreviewMessage
-          key={message.id}
-          chatId={chatId}
-          message={message}
-          isLoading={isLoading && messages.length - 1 === index}
-        />
-      ))}
+        {messages.map((message: UIMessage, index: number) => (
+          <PreviewMessage
+            key={message.id}
+            chatId={chatId}
+            message={message}
+            isLoading={isLoading && messages.length - 1 === index}
+          />
+        ))}
 
-      {isLoading &&
-        messages.length > 0 &&
-        messages[messages.length - 1].role === "user" && <ThinkingMessage />}
+        {isLoading &&
+          messages.length > 0 &&
+          messages[messages.length - 1].role === "user" && <ThinkingMessage />}
 
         <div
           ref={messagesEndRef}

@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
+import { DarkModeToggle } from "@/components/dark-mode-toggle"
 
 export const metadata = {
   title: "AI SDK Python Streaming Preview",
@@ -31,12 +32,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head></head>
-      <body className={cn(GeistSans.className, "antialiased dark")}>
+      <body className={cn(GeistSans.className, "antialiased")}>
         <Toaster position="top-center" richColors />
         <Navbar />
         {children}
+        <DarkModeToggle />
       </body>
     </html>
   );

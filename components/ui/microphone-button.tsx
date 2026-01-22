@@ -19,7 +19,7 @@ function PureMicrophoneButton({
 }: MicrophoneButtonProps) {
   return (
     <Button
-      className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border dark:border-zinc-600"
+      className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border border-border"
       data-testid="microphone-button"
       disabled={status !== "ready"}
       onClick={(event) => {
