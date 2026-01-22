@@ -6,7 +6,6 @@ import React, {
   useEffect,
   useCallback,
   useState,
-  memo,
   type Dispatch,
   type SetStateAction,
 } from "react";
@@ -15,10 +14,12 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 
 import { cn, sanitizeUIMessages } from "@/lib/utils";
 
-import { ArrowUpIcon, StopIcon, PaperclipIcon, MicrophoneIcon } from "./icons";
+import { ArrowUpIcon, StopIcon } from "./icons";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
-import { FileAttachment } from "./file-attachment";
+import { FileAttachment as FileAttachmentComponent } from "./file-attachment";
+import { AttachmentsButton } from "./ui/attachments-button";
+import { MicrophoneButton } from "./ui/microphone-button";
 
 import type { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 
@@ -26,11 +27,6 @@ type ChatRequestOptions = {
   headers?: Record<string, string> | Headers;
   body?: object;
   data?: any;
-};
-
-type FileAttachment = {
-  name: string;
-  type: string;
 };
 
 const suggestedActions = [
@@ -83,14 +79,17 @@ export function MultimodalInput({
   className?: string;
 }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const resumeInputRef = useRef<HTMLInputElement>(null);
+  const jobDescriptionInputRef = useRef<HTMLInputElement>(null);
   const [isResumeLoading, setIsResumeLoading] = useState<boolean>(false);
-  const [attachedResume, setAttachedResume] = useState<FileAttachment | null>(null);
+  const [isJobDescriptionLoading, setIsJobDescriptionLoading] = useState<boolean>(false);
+  const [attachedResume, setAttachedResume] = useState<{ name: string; type: string } | null>(null);
+  const [attachedJobDescription, setAttachedJobDescription] = useState<{ name: string; type: string } | null>(null);
 
   // audio recording
-  const [isRecording, setIsRecording] = useState<boolean>(false)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const audioChunksRef = useRef<Blob[]>([])
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   const { width } = useWindowSize();
 
@@ -103,8 +102,7 @@ export function MultimodalInput({
   const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2
-        }px`;
+      textareaRef.current.style.height = `${textareaRef.current.scrollHeight + 2}px`;
     }
   };
 
@@ -135,7 +133,7 @@ export function MultimodalInput({
   };
 
   const uploadResume = useCallback(async (file: File, chatId: string) => {
-    setIsResumeLoading(true)
+    setIsResumeLoading(true);
     const formData = new FormData();
     formData.append("file", file);
     formData.append("uuid", chatId);
@@ -168,7 +166,7 @@ export function MultimodalInput({
     } catch (_error) {
       toast.error("Failed to upload resume, please try again!");
     } finally {
-      setIsResumeLoading(false)
+      setIsResumeLoading(false);
     }
   }, []);
 
@@ -224,6 +222,88 @@ export function MultimodalInput({
   useEffect(() => {
     loadResume(chatId);
   }, [chatId, loadResume]);
+
+  const uploadJobDescription = useCallback(async (file: File, chatId: string) => {
+    setIsJobDescriptionLoading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("uuid", chatId);
+    formData.append("type", "job-description");
+
+    const fileType = file.type.split('/')[1]?.toUpperCase() || 'PDF';
+    setAttachedJobDescription({
+      name: file.name,
+      type: fileType,
+    });
+
+    try {
+      const response = await fetch("/api/files/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(file.name + " uploaded successfully!");
+
+        return {
+          url: data.url,
+          name: data.pathname,
+          contentType: data.contentType,
+        };
+      } else {
+        toast.error("Failed to upload job description, please try again!");
+      }
+    } catch (_error) {
+      toast.error("Failed to upload job description, please try again!");
+    } finally {
+      setIsJobDescriptionLoading(false);
+    }
+  }, []);
+
+  const loadJobDescription = useCallback(async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/files/${chatId}?type=job-description`, {
+        method: "GET",
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
+        setAttachedJobDescription({
+          name: data.name,
+          type: fileType,
+        });
+      } else {
+        setAttachedJobDescription(null);
+      }
+    } catch (error) {
+      console.error(error);
+      setAttachedJobDescription(null);
+    }
+  }, []);
+
+  const removeJobDescription = useCallback(async (chatId: string) => {
+    setAttachedJobDescription(null);
+    try {
+      const response = await fetch(`/api/files/${chatId}?type=job-description`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(data.message);
+      } else {
+        toast.error("Failed to delete job description, please try again!");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, []);
+
+  // useEffect(() => {
+  //   loadJobDescription(chatId);
+  // }, [chatId, loadJobDescription]);
 
   const handleMicrophoneClick = useCallback(async () => {
     if (isRecording) {
@@ -302,15 +382,25 @@ export function MultimodalInput({
         </div>
       )}
 
-      {/* Resume Attachment */}
-      {(attachedResume || isResumeLoading) && (
-        <div className="flex justify-start">
-          <FileAttachment
-            fileName={attachedResume?.name || "Resume"}
-            fileType={attachedResume?.type || "PDF"}
-            onRemove={() => removeResume(chatId)}
-            isLoading={isResumeLoading}
-          />
+      {/* File Attachments */}
+      {(attachedResume || isResumeLoading || attachedJobDescription || isJobDescriptionLoading) && (
+        <div className="flex flex-wrap gap-2 justify-start">
+          {(attachedResume || isResumeLoading) && (
+            <FileAttachmentComponent
+              fileName={attachedResume?.name || "Resume"}
+              fileType={attachedResume?.type || "PDF"}
+              onRemove={() => removeResume(chatId)}
+              isLoading={isResumeLoading}
+            />
+          )}
+          {(attachedJobDescription || isJobDescriptionLoading) && (
+            <FileAttachmentComponent
+              fileName={attachedJobDescription?.name || "Job Description"}
+              fileType={attachedJobDescription?.type || "PDF"}
+              onRemove={() => removeJobDescription(chatId)}
+              isLoading={isJobDescriptionLoading}
+            />
+          )}
         </div>
       )}
 
@@ -339,7 +429,7 @@ export function MultimodalInput({
       />
 
       <input
-        ref={fileInputRef}
+        ref={resumeInputRef}
         type="file"
         className="hidden"
         onChange={(event) => {
@@ -348,11 +438,27 @@ export function MultimodalInput({
             uploadResume(file, chatId);
           }
         }}
-        multiple
         accept="application/pdf"
       />
 
-      <AttachmentsButton fileInputRef={fileInputRef} status={status} />
+      <input
+        ref={jobDescriptionInputRef}
+        type="file"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) {
+            uploadJobDescription(file, chatId);
+          }
+        }}
+        accept="application/pdf"
+      />
+
+      <AttachmentsButton
+        resumeInputRef={resumeInputRef}
+        jobDescriptionInputRef={jobDescriptionInputRef}
+        status={status}
+      />
 
       <MicrophoneButton
         isRecording={isRecording}
@@ -386,57 +492,3 @@ export function MultimodalInput({
     </div>
   );
 }
-
-function PureAttachmentsButton({
-  fileInputRef,
-  status,
-}: {
-  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  status: UseChatHelpers<UIMessage>["status"];
-}) {
-  return (
-    <Button
-      className="rounded-full p-1.5 h-fit absolute bottom-2 left-2 m-0.5 border dark:border-zinc-600"
-      data-testid="attachments-button"
-      disabled={status !== "ready"}
-      onClick={(event) => {
-        event.preventDefault();
-        fileInputRef.current?.click();
-      }}
-      variant="ghost"
-    >
-      <PaperclipIcon size={14} />
-    </Button>
-  );
-}
-
-const AttachmentsButton = memo(PureAttachmentsButton);
-
-
-function PureMicrophoneButton({
-  isRecording,
-  onClick,
-  status,
-}: {
-  isRecording: boolean
-  onClick: () => void
-  status: UseChatHelpers<UIMessage>["status"]
-}) {
-  return (
-    <Button
-      className="rounded-full p-1.5 h-fit absolute bottom-2 right-12 m-0.5 border dark:border-zinc-600"
-      data-testid="microphone-button"
-      disabled={status !== "ready"}
-      onClick={(event) => {
-        event.preventDefault()
-        onClick()
-      }}
-      variant={isRecording ? "default" : "ghost"}
-    >
-      {isRecording && <span className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />}
-      <MicrophoneIcon size={14} className={cn("relative z-10", isRecording && "text-red-500")} />
-    </Button>
-  )
-}
-
-const MicrophoneButton = memo(PureMicrophoneButton)
