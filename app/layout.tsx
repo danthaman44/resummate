@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
   title: "AI SDK Python Streaming Preview",
@@ -32,13 +33,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <head></head>
       <body className={cn(GeistSans.className, "antialiased")}>
-        <Toaster position="top-center" richColors />
-        <Navbar />
-        {children}
-        <DarkModeToggle />
+        <ThemeProvider>
+          <Toaster position="top-center" richColors />
+          <Navbar />
+          {children}
+          <DarkModeToggle />
+        </ThemeProvider>
       </body>
     </html>
   );

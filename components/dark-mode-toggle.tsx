@@ -1,19 +1,21 @@
 'use client'
 
-import { useState } from "react"
 import { Sun, Moon } from "lucide-react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle"
+import { useTheme } from "@/components/theme-provider"
 
 export function DarkModeToggle() {
-  const [mode, setMode] = useState("light")
+  const { theme, setTheme } = useTheme()
 
   return (
     <div className="fixed bottom-4 left-4 z-50">
       <ToggleGroup
         type="single"
-        value={mode}
+        value={theme}
         onValueChange={(value) => {
-          if (value) setMode(value)
+          if (value === 'dark' || value === 'light') {
+            setTheme(value)
+          }        
         }}
         variant="outline"
       >
