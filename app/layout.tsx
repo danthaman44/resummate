@@ -7,6 +7,9 @@ import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/navbar";
 import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { ThemeProvider } from "@/components/theme-provider";
+import { GitIcon } from "@/components/icons";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export const metadata = {
   title: "Resummate",
@@ -28,7 +31,10 @@ export default function RootLayout({
             <ThemeProvider>
               <Toaster position="top-center" richColors />
               <Navbar />
-              {children}
+              <main className="pt-14">
+                {children}
+              </main>
+              <ViewSourceCodeButton />
               <DarkModeToggle />
             </ThemeProvider>
           </StackTheme>
@@ -36,4 +42,16 @@ export default function RootLayout({
       </body>
     </html>
   );
+}
+
+export function ViewSourceCodeButton() {
+  return (
+    <div className="fixed bottom-4 left-4 z-50">  
+      <Link href="https://github.com/danthaman44/experience-iq/">
+        <Button variant="outline">
+          <GitIcon /> View Source Code
+        </Button>
+      </Link>
+    </div>
+  )
 }

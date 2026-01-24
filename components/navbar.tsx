@@ -5,6 +5,7 @@ import { GitIcon, MessageIcon } from "./icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation"
 import { useCallback } from "react";
+import { UserButton } from '@stackframe/stack';
 
 export const Navbar = () => {
 
@@ -16,20 +17,20 @@ export const Navbar = () => {
   }, [router]);
 
   return (
-    <div className="p-2 flex flex-row gap-2 justify-between">
-      <Link href="https://github.com/danthaman44/experience-iq/">
-        <Button variant="outline">
-          <GitIcon /> View Source Code
+    <div className="fixed top-0 left-0 right-0 z-50 p-2 flex flex-row gap-2 justify-between bg-background">
+      <div className="flex flex-row gap-2 items-center pl-2">
+        <Button onClick={(event) => {
+          event.preventDefault();
+          refreshSession();
+        }}>
+          <MessageIcon />
+          New Session
         </Button>
-      </Link>
+      </div>
 
-      <Button onClick={(event) => {
-        event.preventDefault();
-        refreshSession();
-      }}>
-        <MessageIcon />
-        New Session
-      </Button>
+      <div className="pr-2">
+        <UserButton />
+      </div>
     </div>
   );
 };

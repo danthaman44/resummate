@@ -8,7 +8,7 @@ export function DarkModeToggle() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <div className="fixed bottom-4 left-4 z-50">
+    <div className="fixed bottom-16 left-4 z-50">
       <ToggleGroup
         type="single"
         value={theme}
