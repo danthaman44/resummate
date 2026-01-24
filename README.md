@@ -1,10 +1,10 @@
-# ExperienceIQ
+# Resummate
 
 > Transform your resume into a Top 1% application with AI-powered career coaching
 
 ## Overview
 
-ExperienceIQ is an intelligent resume review platform that combines modern hiring standards, ATS optimization, and personalized coaching to help job seekers create exceptional applications. By leveraging advanced AI analysis, ExperienceIQ provides actionable feedback on resume content, formatting, keyword alignment, and overall effectiveness.
+Resummate is an intelligent resume review platform that combines modern hiring standards, ATS optimization, and personalized coaching to help job seekers create exceptional applications. By leveraging advanced AI analysis, Resummate provides actionable feedback on resume content, formatting, keyword alignment, and overall effectiveness.
 
 ## Product Features
 
