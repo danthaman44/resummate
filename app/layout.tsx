@@ -7,24 +7,9 @@ import { DarkModeToggle } from "@/components/dark-mode-toggle"
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
-  title: "AI SDK Python Streaming Preview",
+  title: "Resummate",
   description:
-    "Use the Data Stream Protocol to stream chat completions from a Python endpoint (FastAPI) and display them using the useChat hook in your Next.js application.",
-  openGraph: {
-    images: [
-      {
-        url: "/og?title=AI SDK Python Streaming Preview",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    images: [
-      {
-        url: "/og?title=AI SDK Python Streaming Preview",
-      },
-    ],
-  },
+    "Resummate is an AI-powered resume review platform that helps you create a Top 1% application.",
 };
 
 export default function RootLayout({
