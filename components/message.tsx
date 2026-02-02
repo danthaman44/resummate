@@ -3,12 +3,13 @@
 import type { UIMessage } from "@ai-sdk/react";
 import { motion } from "framer-motion";
 import { Streamdown } from "streamdown";
+import { memo } from "react";
 
 import { SparklesIcon } from "./icons";
 import { PreviewAttachment } from "./preview-attachment";
 import { cn } from "@/lib/utils";
 
-export const PreviewMessage = ({
+const PreviewMessageComponent = ({
   message,
 }: {
   chatId: string;
@@ -87,6 +88,36 @@ export const PreviewMessage = ({
     </motion.div>
   );
 };
+
+// Memoize PreviewMessage to prevent unnecessary re-renders
+// Only re-render if message content or isLoading state changes
+export const PreviewMessage = memo(
+  PreviewMessageComponent,
+  (prevProps, nextProps) => {
+    // If isLoading changes for this message, re-render
+    if (prevProps.isLoading !== nextProps.isLoading) {
+      return false;
+    }
+    
+    // If message ID is different, re-render
+    if (prevProps.message.id !== nextProps.message.id) {
+      return false;
+    }
+    
+    // Deep compare message parts for streaming updates
+    const prevParts = JSON.stringify(prevProps.message.parts);
+    const nextParts = JSON.stringify(nextProps.message.parts);
+    
+    if (prevParts !== nextParts) {
+      return false;
+    }
+    
+    // Otherwise, skip re-render (return true means "props are equal, skip render")
+    return true;
+  }
+);
+
+PreviewMessage.displayName = "PreviewMessage";
 
 export const ThinkingMessage = () => {
   const role = "assistant";

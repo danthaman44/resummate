@@ -6,7 +6,7 @@ import { Overview } from "@/components/overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat, type UIMessage } from "@ai-sdk/react";
 import { toast } from "sonner";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import { Spinner } from "@/components/ui/spinner"
 
@@ -67,6 +67,19 @@ export function Chat() {
 
   const isLoading = status === "submitted" || status === "streaming";
 
+  // Memoize rendered messages to prevent unnecessary re-renders
+  // Only re-compute when messages array or isLoading state changes
+  const renderedMessages = useMemo(() => {
+    return messages.map((message: UIMessage, index: number) => (
+      <PreviewMessage
+        key={message.id}
+        chatId={chatId}
+        message={message}
+        isLoading={isLoading && messages.length - 1 === index}
+      />
+    ));
+  }, [messages, isLoading, chatId]);
+
   const handleSubmit = (event?: { preventDefault?: () => void }) => {
     event?.preventDefault?.();
     if (input.trim()) {
@@ -102,14 +115,7 @@ export function Chat() {
 
         {messages.length === 0 && <Overview />}
 
-        {messages.map((message: UIMessage, index: number) => (
-          <PreviewMessage
-            key={message.id}
-            chatId={chatId}
-            message={message}
-            isLoading={isLoading && messages.length - 1 === index}
-          />
-        ))}
+        {renderedMessages}
 
         {isLoading &&
           messages.length > 0 &&

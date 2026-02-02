@@ -173,29 +173,6 @@ export function MultimodalInput({
     }
   }, [handleSubmit, setLocalStorageInput, width]);
 
-  const loadResume = useCallback(async (chatId: string) => {
-    try {
-      const response = await fetch(`/api/resume/${chatId}`, {
-        method: "GET",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
-        setAttachedResume({
-          name: data.name,
-          type: fileType,
-        });
-      } else {
-        setAttachedResume(null);
-      }
-    } catch (error) {
-      console.error(error);
-      setAttachedResume(null);
-    }
-  }, []);
-
   const removeResume = useCallback(async (chatId: string) => {
     setAttachedResume(null);
     try {
@@ -212,10 +189,6 @@ export function MultimodalInput({
       console.error(error);
     }
   }, []);
-
-  useEffect(() => {
-    loadResume(chatId);
-  }, [chatId, loadResume]);
 
   const uploadJobDescription = useCallback(async (file: File, chatId: string) => {
     setIsJobDescriptionLoading(true);
@@ -255,29 +228,6 @@ export function MultimodalInput({
     }
   }, []);
 
-  const loadJobDescription = useCallback(async (chatId: string) => {
-    try {
-      const response = await fetch(`/api/job-description/${chatId}`, {
-        method: "GET",
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-
-        const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
-        setAttachedJobDescription({
-          name: data.name,
-          type: fileType,
-        });
-      } else {
-        setAttachedJobDescription(null);
-      }
-    } catch (error) {
-      console.error(error);
-      setAttachedJobDescription(null);
-    }
-  }, []);
-
   const removeJobDescription = useCallback(async (chatId: string) => {
     setAttachedJobDescription(null);
     try {
@@ -295,9 +245,67 @@ export function MultimodalInput({
     }
   }, []);
 
+  // Load both resume and job description in parallel with abort controller
   useEffect(() => {
-    loadJobDescription(chatId);
-  }, [chatId, loadJobDescription]);
+    const abortController = new AbortController();
+    const { signal } = abortController;
+
+    const loadFiles = async () => {
+      try {
+        await Promise.all([
+          fetch(`/api/resume/${chatId}`, { method: "GET", signal })
+            .then(async (response) => {
+              if (response.ok) {
+                const data = await response.json();
+                const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
+                setAttachedResume({
+                  name: data.name,
+                  type: fileType,
+                });
+              } else {
+                setAttachedResume(null);
+              }
+            })
+            .catch((error) => {
+              if (error.name !== 'AbortError') {
+                console.error(error);
+                setAttachedResume(null);
+              }
+            }),
+          fetch(`/api/job-description/${chatId}`, { method: "GET", signal })
+            .then(async (response) => {
+              if (response.ok) {
+                const data = await response.json();
+                const fileType = data.contentType.split('/')[1]?.toUpperCase() || 'PDF';
+                setAttachedJobDescription({
+                  name: data.name,
+                  type: fileType,
+                });
+              } else {
+                setAttachedJobDescription(null);
+              }
+            })
+            .catch((error) => {
+              if (error.name !== 'AbortError') {
+                console.error(error);
+                setAttachedJobDescription(null);
+              }
+            })
+        ]);
+      } catch (error) {
+        if (error instanceof Error && error.name !== 'AbortError') {
+          console.error('Error loading files:', error);
+        }
+      }
+    };
+
+    loadFiles();
+
+    // Cleanup: abort ongoing requests when chatId changes or component unmounts
+    return () => {
+      abortController.abort();
+    };
+  }, [chatId]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">
