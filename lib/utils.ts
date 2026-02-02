@@ -36,7 +36,7 @@ export function sanitizeUIMessages(
 
     return message.parts.some((part: unknown) => {
       const typedPart = part as { type?: string; state?: string; text?: string };
-      if (typedPart.type === "text" && typedPart.text?.length > 0) return true;
+      if (typedPart.type === "text" && typedPart.text?.length && typedPart.text.length > 0) return true;
       if (typedPart.type?.startsWith("tool-") && typedPart.state === "output-available")
         return true;
       return false;
