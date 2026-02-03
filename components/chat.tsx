@@ -8,9 +8,12 @@ import { useChat, type UIMessage } from "@ai-sdk/react";
 import { toast } from "sonner";
 import React, { useEffect, useState, useMemo } from "react";
 import { useParams } from "next/navigation";
-import { Spinner } from "@/components/ui/spinner"
+import { useUser } from "@stackframe/stack";
+import { Spinner } from "@/components/ui/spinner";
+import { getAuthHeaders } from "@/lib/auth-headers";
 
 export function Chat() {
+  const user = useUser({ or: "redirect" });
   const params = useParams();
   const uuid = params?.uuid as string;
   const chatId = uuid || "001";
@@ -25,22 +28,24 @@ export function Chat() {
       setInitialMessages([]);
     }, 0);
 
-    fetch(`/api/chat/history/${chatId}`)
-      .then(res => {
+    const loadHistory = async () => {
+      try {
+        const headers = await getAuthHeaders(user);
+        const res = await fetch(`/api/chat/history/${chatId}`, { headers });
         if (!res.ok) throw new Error('Failed to fetch chat history');
-        return res.json();
-      })
-      .then(data => {
+        const data = await res.json();
         setInitialMessages(data.messages || []);
         setIsLoadingHistory(false);
-      })
-      .catch(() => {
+      } catch {
         toast.error('Failed to load chat history');
         setIsLoadingHistory(false);
-      });
+      }
+    };
+
+    loadHistory();
 
     return () => clearTimeout(timeoutId);
-  }, [chatId]);
+  }, [chatId, user]);
 
   const { messages, setMessages, sendMessage, status, stop } = useChat({
     id: chatId,
@@ -80,12 +85,14 @@ export function Chat() {
     ));
   }, [messages, isLoading, chatId]);
 
-  const handleSubmit = (event?: { preventDefault?: () => void }) => {
+  const handleSubmit = async (event?: { preventDefault?: () => void }) => {
     event?.preventDefault?.();
     if (input.trim()) {
+      const headers = await getAuthHeaders(user);
       sendMessage(
         { text: input },
         {
+          headers: headers as Record<string, string>,
           body: {
             id: chatId,
           },

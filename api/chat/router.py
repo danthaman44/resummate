@@ -4,9 +4,10 @@ Chat router for handling chat conversations and message history.
 
 import uuid as uuid_lib
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 
+from api.auth.stack_auth import verify_stack_token
 from api.core.dependencies import SupabaseClient, GeminiClient
 from api.core.logging import log_info
 from api.core.schemas import (
@@ -31,7 +32,9 @@ from api.services.gemini import (
 )
 
 
-router = APIRouter(prefix="/api", tags=["chat"])
+router = APIRouter(
+    prefix="/api", tags=["chat"], dependencies=[Depends(verify_stack_token)]
+)
 
 
 def patch_response_with_headers(

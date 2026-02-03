@@ -11,8 +11,10 @@ import React, {
 } from "react";
 import { toast } from "sonner";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
+import { useUser } from "@stackframe/stack";
 
 import { cn, sanitizeUIMessages } from "@/lib/utils";
+import { getAuthHeadersForFormData, getAuthHeaders } from "@/lib/auth-headers";
 
 import { ArrowUpIcon, StopIcon } from "./icons";
 import { Button } from "./ui/button";
@@ -77,6 +79,7 @@ export function MultimodalInput({
   status: UseChatHelpers<UIMessage>["status"];
   className?: string;
 }) {
+  const user = useUser({ or: "redirect" });
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const jobDescriptionInputRef = useRef<HTMLInputElement>(null);
@@ -140,8 +143,10 @@ export function MultimodalInput({
     });
 
     try {
+      const headers = await getAuthHeadersForFormData(user);
       const response = await fetch("/api/resume/upload", {
         method: "POST",
+        headers: headers,
         body: formData,
       });
 
@@ -162,7 +167,7 @@ export function MultimodalInput({
     } finally {
       setIsResumeLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const submitForm = useCallback(() => {
     handleSubmit(undefined, {});
@@ -176,8 +181,10 @@ export function MultimodalInput({
   const removeResume = useCallback(async (chatId: string) => {
     setAttachedResume(null);
     try {
+      const headers = await getAuthHeaders(user);
       const response = await fetch(`/api/resume/${chatId}`, {
         method: "DELETE",
+        headers: headers,
       });
       if (response.ok) {
         const data = await response.json();
@@ -188,7 +195,7 @@ export function MultimodalInput({
     } catch (error) {
       console.error(error);
     }
-  }, []);
+  }, [user]);
 
   const uploadJobDescription = useCallback(async (file: File, chatId: string) => {
     setIsJobDescriptionLoading(true);
@@ -204,8 +211,10 @@ export function MultimodalInput({
     });
 
     try {
+      const headers = await getAuthHeadersForFormData(user);
       const response = await fetch("/api/job-description/upload", {
         method: "POST",
+        headers: headers,
         body: formData,
       });
 
@@ -226,13 +235,15 @@ export function MultimodalInput({
     } finally {
       setIsJobDescriptionLoading(false);
     }
-  }, []);
+  }, [user]);
 
   const removeJobDescription = useCallback(async (chatId: string) => {
     setAttachedJobDescription(null);
     try {
+      const headers = await getAuthHeaders(user);
       const response = await fetch(`/api/job-description/${chatId}`, {
         method: "DELETE",
+        headers: headers,
       });
       if (response.ok) {
         const data = await response.json();
@@ -243,7 +254,7 @@ export function MultimodalInput({
     } catch (error) {
       console.error(error);
     }
-  }, []);
+  }, [user]);
 
   // Load both resume and job description in parallel with abort controller
   useEffect(() => {
@@ -252,8 +263,9 @@ export function MultimodalInput({
 
     const loadFiles = async () => {
       try {
+        const headers = await getAuthHeaders(user);
         await Promise.all([
-          fetch(`/api/resume/${chatId}`, { method: "GET", signal })
+          fetch(`/api/resume/${chatId}`, { method: "GET", headers: headers, signal })
             .then(async (response) => {
               if (response.ok) {
                 const data = await response.json();
@@ -272,7 +284,7 @@ export function MultimodalInput({
                 setAttachedResume(null);
               }
             }),
-          fetch(`/api/job-description/${chatId}`, { method: "GET", signal })
+          fetch(`/api/job-description/${chatId}`, { method: "GET", headers: headers, signal })
             .then(async (response) => {
               if (response.ok) {
                 const data = await response.json();
@@ -305,7 +317,7 @@ export function MultimodalInput({
     return () => {
       abortController.abort();
     };
-  }, [chatId]);
+  }, [chatId, user]);
 
   return (
     <div className="relative w-full flex flex-col gap-4">

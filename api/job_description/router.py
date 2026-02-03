@@ -4,8 +4,9 @@ Job description router for handling job description upload, retrieval, and delet
 
 import uuid as uuid_lib
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, status
 
+from api.auth.stack_auth import verify_stack_token
 from api.core.dependencies import SupabaseClient, GeminiClient
 from api.core.schemas import FileUploadResponse, FileInfoResponse
 from api.db.service import (
@@ -15,7 +16,11 @@ from api.db.service import (
 )
 from api.services.gemini import upload_file
 
-router = APIRouter(prefix="/api/job-description", tags=["job-description"])
+router = APIRouter(
+    prefix="/api/job-description",
+    tags=["job-description"],
+    dependencies=[Depends(verify_stack_token)],
+)
 
 
 @router.post(
