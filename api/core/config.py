@@ -8,6 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
+    # Stack Configuration
+    NEXT_PUBLIC_STACK_PROJECT_ID: str
+    NEXT_PUBLIC_STACK_PUBLISHABLE_CLIENT_KEY: str
+    STACK_SECRET_SERVER_KEY: str
+
     # Supabase Configuration
     SUPABASE_URL: str
     SUPABASE_PUBLISHABLE_DEFAULT_KEY: str
